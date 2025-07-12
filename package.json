@@ -1,0 +1,18 @@
+{
+  "name": "vimvestor",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=.env agent.js"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "groq-sdk": "^0.26.0"
+  }
+}

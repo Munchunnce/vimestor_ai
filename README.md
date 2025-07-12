@@ -93,6 +93,16 @@ Assistant: Added to the database.
 
 User: How much did I spend this month?
 Assistant: You have spent 250 INR this month.
+
+User: hi
+Assistant: Hello. How can I help you with your expenses or financial planning today?
+
+User: I spent 300 on books
+Assistant: I have added the new expense to the database. The books cost 300 INR.
+
+User: how much money i have spent this month?
+Assistant: You have spent 300 INR this month.
+
 ```
 
 ---
@@ -112,7 +122,3 @@ Software Developer | India 🇮🇳
 Tech Stack: React.js, Node.js, Groq SDK, Bun
 
 ---
-
-```
-
-```

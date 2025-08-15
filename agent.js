@@ -188,4 +188,4 @@ function getMoneyBalance() {
     const totalExpense = expenseDB.reduce((acc, item) => acc + item.amount, 0);
 
     return `${totalIncome - totalExpense} INR`;
-}
+};

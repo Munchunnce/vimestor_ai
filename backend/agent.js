@@ -209,6 +209,13 @@ const port = process.env.PORT || 5000;
 app.use(cors({
   origin: ["https://vimestor-ai.vercel.app", "http://localhost:3000"]
 }));
+
+// Add this above app.listen(...)
+app.get("/", (req, res) => {
+  res.send("🚀 Vimestor AI Backend is running. Use POST /ai to interact.");
+});
+
+
 app.use(express.json());
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

@@ -16,7 +16,7 @@ export default function ShikhaFinanceAI() {
     }
   }, [messages]);
 
-  // Actual handleSend function
+  // Send message to backend
   const handleSend = useCallback(async () => {
     if (!input.trim()) return;
 
@@ -26,7 +26,7 @@ export default function ShikhaFinanceAI() {
     setInput('');
 
     try {
-      const res = await axios.post('http://localhost:5000/ai', {
+      const res = await axios.post('https://vimestor-ai-backend.vercel.app/ai', {
         messages: updatedMessages,
       });
       const assistantMessage = res.data; // backend sends clean content
@@ -37,18 +37,15 @@ export default function ShikhaFinanceAI() {
     }
   }, [input, messages]);
 
-  // Keep latest handleSend in ref
+  // Keep latest handleSend in ref for speech
   useEffect(() => {
     handleSendRef.current = handleSend;
   }, [handleSend]);
 
-  // Speech Recognition setup
+  // Speech Recognition
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Sorry, your browser doesn't support speech recognition.");
-      return;
-    }
+    if (!SpeechRecognition) return;
 
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-IN';
@@ -60,10 +57,8 @@ export default function ShikhaFinanceAI() {
       setInput(transcript);
 
       setTimeout(() => {
-        if (handleSendRef.current) {
-          handleSendRef.current();
-        }
-      }, 500);
+        if (handleSendRef.current) handleSendRef.current();
+      }, 300); // small delay for smoothness
     };
 
     recognition.onend = () => setListening(false);
@@ -75,40 +70,29 @@ export default function ShikhaFinanceAI() {
     recognitionRef.current = recognition;
   }, []);
 
-  // Speech synthesis setup
-  let selectedVoice = null;
-  const loadVoices = () => {
-    const voices = window.speechSynthesis.getVoices();
-    selectedVoice =
-      voices.find(v => v.name === 'Google हिन्दी') ||
-      voices.find(v => v.name === 'Google UK English Female') ||
-      voices.find(v => v.lang === 'hi-IN') ||
-      voices.find(v => v.lang === 'en-IN') ||
-      voices[0];
-  };
-  if (typeof window !== 'undefined') {
-    if (window.speechSynthesis.onvoiceschanged !== undefined) {
-      window.speechSynthesis.onvoiceschanged = loadVoices;
-    }
-    loadVoices();
-  }
-
+  // Speech Synthesis
   const speak = (text) => {
+    if (!text) return;
     const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(text);
     const isHindi = /[ऀ-ॿ]/.test(text);
     utterance.lang = isHindi ? 'hi-IN' : 'en-IN';
-    if (selectedVoice) utterance.voice = selectedVoice;
+    const voices = synth.getVoices();
+    utterance.voice =
+      voices.find(v => v.name === 'Google हिन्दी') ||
+      voices.find(v => v.name === 'Google UK English Female') ||
+      voices[0];
     synth.speak(utterance);
   };
 
   const handleMicClick = () => {
+    if (!recognitionRef.current) return;
     if (listening) {
       recognitionRef.current.stop();
       setListening(false);
     } else {
-      setListening(true);
       recognitionRef.current.start();
+      setListening(true);
     }
   };
 

@@ -6,11 +6,10 @@ export default function ShikhaFinanceAI() {
   const [input, setInput] = useState('');
   const [listening, setListening] = useState(false);
   const recognitionRef = useRef(null);
-  const handleSendRef = useRef(null); // 👈 store current version of handleSend
-  const messagesEndRef = useRef(null);  // 👈 naya ref
+  const handleSendRef = useRef(null);
+  const messagesEndRef = useRef(null);
 
-
-   // 👇 Jab bhi messages change ho, scroll bottom ho jaye
+  // Scroll to bottom when messages update
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
@@ -30,10 +29,9 @@ export default function ShikhaFinanceAI() {
       const res = await axios.post('http://localhost:5000/ai', {
         messages: updatedMessages,
       });
-      const assistantMessage = res.data;
+      const assistantMessage = res.data; // backend sends clean content
       setMessages([...updatedMessages, assistantMessage]);
-      // 👇 Speak the AI response
-    speak(assistantMessage.content);
+      speak(assistantMessage.content);
     } catch (error) {
       console.error('Error communicating with AI backend', error);
     }
@@ -44,6 +42,7 @@ export default function ShikhaFinanceAI() {
     handleSendRef.current = handleSend;
   }, [handleSend]);
 
+  // Speech Recognition setup
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
@@ -62,7 +61,7 @@ export default function ShikhaFinanceAI() {
 
       setTimeout(() => {
         if (handleSendRef.current) {
-          handleSendRef.current(); // 👈 call from ref
+          handleSendRef.current();
         }
       }, 500);
     };
@@ -75,56 +74,33 @@ export default function ShikhaFinanceAI() {
 
     recognitionRef.current = recognition;
   }, []);
-//   const speak = (text) => {
-//   const synth = window.speechSynthesis;
-//   const utterance = new SpeechSynthesisUtterance(text);
 
-//   // 👇 Language auto-detect: Hindi vs English
-//   const isHindi = /[ऀ-ॿ]/.test(text);
-//   utterance.lang = isHindi ? 'hi-IN' : 'en-IN';
-
-//   synth.speak(utterance);
-// };
-let selectedVoice = null;
-
-// ✅ 1. Load available voices from browser
-const loadVoices = () => {
-  const voices = window.speechSynthesis.getVoices();
-
-  selectedVoice =
-    voices.find(v => v.name === 'Google हिन्दी') ||  // Hindi Female
-    voices.find(v => v.name === 'Google UK English Female') || // English Female
-    voices.find(v => v.lang === 'hi-IN') || // Fallback Hindi
-    voices.find(v => v.lang === 'en-IN') || // Fallback English India
-    voices[0]; // Any fallback
-};
-
-
-// 🔁 Make sure voices are loaded before use
-if (typeof window !== 'undefined') {
-  if (window.speechSynthesis.onvoiceschanged !== undefined) {
-    window.speechSynthesis.onvoiceschanged = loadVoices;
-  }
-  loadVoices(); // Initial load
-}
-
-
-// ✅ 2. Speak function with female voice
-const speak = (text) => {
-  const synth = window.speechSynthesis;
-  const utterance = new SpeechSynthesisUtterance(text);
-
-  // Auto-language detection
-  const isHindi = /[ऀ-ॿ]/.test(text);
-  utterance.lang = isHindi ? 'hi-IN' : 'en-IN';
-
-  if (selectedVoice) {
-    utterance.voice = selectedVoice;
+  // Speech synthesis setup
+  let selectedVoice = null;
+  const loadVoices = () => {
+    const voices = window.speechSynthesis.getVoices();
+    selectedVoice =
+      voices.find(v => v.name === 'Google हिन्दी') ||
+      voices.find(v => v.name === 'Google UK English Female') ||
+      voices.find(v => v.lang === 'hi-IN') ||
+      voices.find(v => v.lang === 'en-IN') ||
+      voices[0];
+  };
+  if (typeof window !== 'undefined') {
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
   }
 
-  synth.speak(utterance);
-};
-
+  const speak = (text) => {
+    const synth = window.speechSynthesis;
+    const utterance = new SpeechSynthesisUtterance(text);
+    const isHindi = /[ऀ-ॿ]/.test(text);
+    utterance.lang = isHindi ? 'hi-IN' : 'en-IN';
+    if (selectedVoice) utterance.voice = selectedVoice;
+    synth.speak(utterance);
+  };
 
   const handleMicClick = () => {
     if (listening) {
@@ -151,6 +127,7 @@ const speak = (text) => {
               <p className="text-sm">{msg.role === 'user' ? 'You' : 'Cortana'}: {msg.content}</p>
             </div>
           ))}
+          <div ref={messagesEndRef}></div>
         </div>
         <div className="flex gap-2">
           <input

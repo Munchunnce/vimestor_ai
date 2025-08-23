@@ -285,8 +285,12 @@ function getMoneyBalance() {
   return `${totalIncome - totalExpense} INR`;
 }
 
+app.get("/", (req, res) => {
+  res.send("Backend is running successfully!");
+});
+
 // ---------- API Endpoint ----------
-app.post("/", async (req, res) => {
+app.post("/ai", async (req, res) => {
   try {
     const userMessages = req.body.messages || [];
 

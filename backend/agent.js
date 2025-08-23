@@ -206,7 +206,10 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
-app.use(cors({ origin: "http://localhost:3000" })); // restrict origin
+// app.use(cors({ origin: "http://localhost:3000" })); // restrict origin
+app.use(cors({
+  origin: ["http://localhost:3000", "https://vimestor-ai.vercel.app"]
+}));
 app.use(express.json());
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

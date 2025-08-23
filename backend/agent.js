@@ -286,7 +286,7 @@ function getMoneyBalance() {
 }
 
 // ---------- API Endpoint ----------
-app.post("/ai", async (req, res) => {
+app.post("/", async (req, res) => {
   try {
     const userMessages = req.body.messages || [];
 

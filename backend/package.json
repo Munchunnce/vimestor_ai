@@ -1,0 +1,21 @@
+{
+  "name": "vimvestor",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "node agent.js"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "groq-sdk": "^0.26.0"
+  }
+}

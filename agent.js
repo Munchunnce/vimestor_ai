@@ -119,7 +119,7 @@ async function callAgent() {
     if (!toolCalls) {
       console.log(`Assistant: ${completion.choices[0].message.content}`);
       break;
-    }
+    };
 
     for (const tool of toolCalls) {
       const functionName = tool.function.name;
@@ -152,7 +152,7 @@ async function callAgent() {
     // console.log("DB: ", expenseDB);
     }
   }
-}
+};
 
 callAgent();
 
@@ -188,4 +188,4 @@ function getMoneyBalance() {
     const totalExpense = expenseDB.reduce((acc, item) => acc + item.amount, 0);
 
     return `${totalIncome - totalExpense} INR`;
-}
+};

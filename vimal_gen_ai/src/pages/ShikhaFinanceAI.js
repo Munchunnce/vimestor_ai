@@ -27,7 +27,7 @@ export default function ShikhaFinanceAI() {
     setInput('');
 
     try {
-      const res = await axios.post('http://localhost:5000', {
+      const res = await axios.post('http://localhost:5000/ai', {
         messages: updatedMessages,
       });
       const assistantMessage = res.data;

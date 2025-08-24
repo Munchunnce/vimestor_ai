@@ -205,9 +205,23 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 // ✅ CORS allow frontend domain
+// ✅ Allow your live frontend + localhost (for dev)
+const allowedOrigins = [
+  "http://localhost:3000",
+  "https://vimestor-ai.vercel.app"
+];
+
 app.use(
   cors({
-    origin: ["https://vimestor-ai.vercel.app", "http://localhost:3000"], // frontend ka live domain
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 app.use(express.json());

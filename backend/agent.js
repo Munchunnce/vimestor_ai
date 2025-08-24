@@ -368,32 +368,40 @@ Current datetime: ${new Date().toUTCString()}`,
     }
 
     // Execute all tool calls
-    if (toolCalls.length > 0) {
-      const toolResults = toolCalls.map(tool => {
-        const fnArgs = safeJsonParse(tool.function.arguments);
-        let result = "";
-        switch (tool.function.name) {
-          case "addIncome":
-            result = addIncome(fnArgs);
-            break;
-          case "addExpense":
-            result = addExpense(fnArgs);
-            break;
-          case "getTotalExpense":
-            result = getTotalExpense(fnArgs);
-            break;
-          case "getMoneyBalance":
-            result = getMoneyBalance();
-            break;
-          default:
-            result = " Unknown function.";
-        }
-        return result;
-      });
+    // Execute all tool calls
+if (toolCalls.length > 0) {
+  const toolResults = toolCalls.map(tool => {
+    const fnArgs = safeJsonParse(tool.function.arguments); //  safe JSON parse
+    let result = "";
 
-      // Return combined results without any <function> tags
-      return res.json({ role: "assistant", content: toolResults.join("\n") });
+    try {
+      switch (tool.function.name) {
+        case "addIncome":
+          result = addIncome(fnArgs);
+          break;
+        case "addExpense":
+          result = addExpense(fnArgs);
+          break;
+        case "getTotalExpense":
+          result = getTotalExpense(fnArgs);
+          break;
+        case "getMoneyBalance":
+          result = getMoneyBalance();
+          break;
+        default:
+          result = "Unknown function.";
+      }
+    } catch (err) {
+      console.error(" Tool Execution Error:", err.message);
+      result = "Failed to execute tool: " + err.message;
     }
+
+    return result;
+  });
+
+  return res.json({ role: "assistant", content: toolResults.join("\n") });
+}
+
 
     // If no tool calls, just return AI message content
     const finalContent = (msg.content || "").replace(/<function=.*?>.*?<\/function>/gi, "").trim();

@@ -207,6 +207,10 @@ const port = process.env.PORT || 5000;
 app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
 
+app.get("/", (req, res) => {
+  res.send("Backend is working 🚀");
+});
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const DATA_FILE = path.resolve("./data.json");
 

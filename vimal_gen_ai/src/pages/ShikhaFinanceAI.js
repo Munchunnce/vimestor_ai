@@ -26,7 +26,9 @@ export default function ShikhaFinanceAI() {
     setInput('');
 
     try {
-      const res = await axios.post('https://vimestor-ai-backend.vercel.app/ai', {
+      const API_URL = "https://vimestor-ai-backend.vercel.app";
+
+      const res = await axios.post(`${API_URL}/ai`, {
         messages: updatedMessages,
       });
       const assistantMessage = res.data; // backend sends clean content

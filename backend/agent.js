@@ -192,7 +192,7 @@
 
 
 
-
+// backend/index.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -201,16 +201,16 @@ import path from "path";
 import Groq from "groq-sdk";
 
 dotenv.config();
+
 const app = express();
 const port = process.env.PORT || 5000;
-
-app.use(cors({ origin: ["https://vimestor-ai.vercel.app"] }));
+app.use(cors({ origin: "http://localhost:3000" }));
 app.use(express.json());
 
-// Data file
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const DATA_FILE = path.resolve("./data.json");
 
-// Utility functions
+// ---------- Utility Functions ----------
 function readData() {
   if (!fs.existsSync(DATA_FILE)) {
     const initial = { incomes: [], expenses: [] };
@@ -218,33 +218,65 @@ function readData() {
     return initial;
   }
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE));
-  } catch {
+    const raw = fs.readFileSync(DATA_FILE);
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error(" JSON Parse Error:", err.message);
     return { incomes: [], expenses: [] };
   }
 }
 
 function writeData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error(" File Write Error:", err.message);
+  }
 }
 
-// Finance functions
+// ---------- Safe JSON Parse ----------
+function safeJsonParse(str) {
+  try {
+    if (!str) return {};
+    str = str.trim();
+    if (str.startsWith("(") && str.endsWith(")")) str = str.slice(1, -1);
+    str = str.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":');
+    return JSON.parse(str);
+  } catch (err) {
+    console.error(" JSON Parse Failed:", str, err.message);
+    return {};
+  }
+}
+
+// ---------- Finance Functions ----------
+function getTotalExpense({ from, to }) {
+  const data = readData();
+  const fromDate = from ? new Date(from) : new Date("2000-01-01");
+  const toDate = to ? new Date(to) : new Date();
+  const expense = data.expenses.reduce((acc, item) => {
+    const date = new Date(item.date || new Date());
+    if (date >= fromDate && date <= toDate) return acc + item.amount;
+    return acc;
+  }, 0);
+  return `${expense} INR`;
+}
+
 function addExpense({ name, amount }) {
   const data = readData();
   const numAmount = parseFloat(amount);
-  if (!name || isNaN(numAmount) || numAmount <= 0) return "Invalid expense. Provide valid name and amount.";
+  if (isNaN(numAmount) || numAmount <= 0) return " Invalid expense amount.";
   data.expenses.push({ name, amount: numAmount, date: new Date().toISOString() });
   writeData(data);
-  return `Expense "${name}" of ${numAmount} INR added successfully.`;
+  return " Expense added successfully.";
 }
 
 function addIncome({ name, amount }) {
   const data = readData();
   const numAmount = parseFloat(amount);
-  if (!name || isNaN(numAmount) || numAmount <= 0) return "Invalid income. Provide valid name and amount.";
+  if (isNaN(numAmount) || numAmount <= 0) return " Invalid income amount.";
   data.incomes.push({ name, amount: numAmount, date: new Date().toISOString() });
   writeData(data);
-  return `Income "${name}" of ${numAmount} INR added successfully.`;
+  return " Income added successfully.";
 }
 
 function getMoneyBalance() {
@@ -254,100 +286,114 @@ function getMoneyBalance() {
   return `${totalIncome - totalExpense} INR`;
 }
 
-// Safe JSON parser for <function> strings
-function safeJsonParse(str) {
-  try {
-    if (!str) return {};
-    str = str.trim().replace(/^<function.*?>/, "").replace(/<\/function>$/, "").trim();
-    str = str.replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g,'$1"$2":');
-    return JSON.parse(str);
-  } catch {
-    return {};
-  }
-}
-
-// Groq SDK
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-// Root endpoint
-app.get("/", (req, res) => {
-  res.send("🚀 Vimestor AI Backend is running. Use POST /ai to interact.");
-});
-
-// AI endpoint
+// ---------- API Endpoint ----------
 app.post("/ai", async (req, res) => {
   try {
     const userMessages = req.body.messages || [];
+
     const messages = [
       {
         role: "system",
         content: `You are Cortana, a personal finance assistant.
-Tools:
-1. getTotalExpense({from: string, to: string}): string
-2. addExpense({name: string, amount: number}): string
-3. addIncome({name: string, amount: number}): string
-4. getMoneyBalance(): string
-Current datetime: ${new Date().toUTCString()}`
+Tools available:
+1. getTotalExpense({from, to})
+2. addExpense({name, amount})
+3. addIncome({name, amount})
+4. getMoneyBalance()
+Current datetime: ${new Date().toUTCString()}`,
       },
-      ...userMessages
+      ...userMessages,
     ];
 
     const completion = await groq.chat.completions.create({
       messages,
       model: "llama-3.3-70b-versatile",
       tools: [
-        { type: "function", function: { name: "getTotalExpense", description: "Get total expense", parameters: { type: "object", properties: { from: { type: "string" }, to: { type: "string" } } } } },
-        { type: "function", function: { name: "addExpense", description: "Add expense", parameters: { type: "object", properties: { name: { type: "string" }, amount: { type: "number" } }, required: ["name", "amount"] } } },
-        { type: "function", function: { name: "addIncome", description: "Add income", parameters: { type: "object", properties: { name: { type: "string" }, amount: { type: "number" } }, required: ["name", "amount"] } } },
-        { type: "function", function: { name: "getMoneyBalance", description: "Get balance", parameters: {} } }
-      ]
+        {
+          type: "function",
+          function: {
+            name: "getTotalExpense",
+            description: "Get total expense from date to date",
+            parameters: { type: "object", properties: { from: { type: "string" }, to: { type: "string" } } },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "addExpense",
+            description: "Add new expense entry",
+            parameters: { type: "object", properties: { name: { type: "string" }, amount: { type: "string" } } },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "addIncome",
+            description: "Add new income entry",
+            parameters: { type: "object", properties: { name: { type: "string" }, amount: { type: "string" } } },
+          },
+        },
+        {
+          type: "function",
+          function: {
+            name: "getMoneyBalance",
+            description: "Get remaining money balance",
+          },
+        },
+      ],
     });
 
-    let msg = completion.choices[0].message;
+    const msg = completion.choices[0].message;
+
+    // ----------------------
+    // Permanent fix for <function=...>
+    // ----------------------
     let toolCalls = msg.tool_calls || [];
 
-    if (!toolCalls.length && msg.content) {
-      const regex = /<function=(\w+)\s*(\{.*?\})?>/gs;
-      let match;
-      toolCalls = [];
-      while ((match = regex.exec(msg.content)) !== null) {
-        toolCalls.push({ id: `manual-${Date.now()}`, function: { name: match[1], arguments: match[2] || "{}" } });
-      }
+    const regex = /<function=(\w+)(.*?)<\/function>/gs;
+    let match;
+    while ((match = regex.exec(msg.content || "")) !== null) {
+      const fnName = match[1];
+      const rawArgs = match[2].trim() || "{}";
+      toolCalls.push({ id: `manual-${Date.now()}`, function: { name: fnName, arguments: rawArgs } });
     }
 
-    if (!toolCalls.length) return res.json({ role: "assistant", content: msg.content || "⚠️ Could not process." });
+    // Execute all tool calls
+    if (toolCalls.length > 0) {
+      const toolResults = toolCalls.map(tool => {
+        const fnArgs = safeJsonParse(tool.function.arguments);
+        let result = "";
+        switch (tool.function.name) {
+          case "addIncome":
+            result = addIncome(fnArgs);
+            break;
+          case "addExpense":
+            result = addExpense(fnArgs);
+            break;
+          case "getTotalExpense":
+            result = getTotalExpense(fnArgs);
+            break;
+          case "getMoneyBalance":
+            result = getMoneyBalance();
+            break;
+          default:
+            result = " Unknown function.";
+        }
+        return result;
+      });
 
-    const toolResults = [];
-    for (const tool of toolCalls) {
-      const fnName = tool.function.name;
-      const fnArgs = safeJsonParse(tool.function.arguments);
-      let result = "";
-
-      switch(fnName){
-        case "getTotalExpense": result = getTotalExpense(fnArgs); break;
-        case "addExpense": result = addExpense(fnArgs); break;
-        case "addIncome": result = addIncome(fnArgs); break;
-        case "getMoneyBalance": result = getMoneyBalance(); break;
-        default: result = "Unknown function called.";
-      }
-
-      toolResults.push({ role: "tool", content: result, tool_call_id: tool.id });
+      // Return combined results without any <function> tags
+      return res.json({ role: "assistant", content: toolResults.join("\n") });
     }
 
-    const followUp = await groq.chat.completions.create({
-      messages: [...messages, msg, ...toolResults],
-      model: "llama-3.3-70b-versatile",
-    });
-
-    let finalMessage = followUp.choices[0].message;
-    if (finalMessage?.content) finalMessage.content = finalMessage.content.replace(/<function=.*?>.*?<\/function>/gi, "");
-
-    res.json(finalMessage);
-
-  } catch(err) {
-    console.error("API Error:", err.message);
+    // If no tool calls, just return AI message content
+    const finalContent = (msg.content || "").replace(/<function=.*?>.*?<\/function>/gi, "").trim();
+    res.json({ role: "assistant", content: finalContent });
+  } catch (err) {
+    console.error(" API Error:", err.message);
     res.status(500).json({ error: "Internal server error" });
   }
 });
 
+// ---------- Start Server ----------
 app.listen(port, () => console.log(`🚀 Server running on http://localhost:${port}`));

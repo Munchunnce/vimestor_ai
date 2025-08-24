@@ -191,6 +191,7 @@
 // }
 
 
+// backend/index.js
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -202,27 +203,7 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
-
-// ✅ Allowed origins
-const allowedOrigins = [
-  "http://localhost:3000", // local dev
-  "https://vimestor-ai.vercel.app", // your frontend live domain
-];
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (like curl / postman)
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
-      }
-    },
-    credentials: true,
-  })
-);
-
+app.use(cors({ origin: "http://localhost:3000" })); // ✅ restrict origin
 app.use(express.json());
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
@@ -301,12 +282,7 @@ function getMoneyBalance() {
   return `${totalIncome - totalExpense} INR`;
 }
 
-// ---------- Health Check ----------
-app.get("/", (req, res) => {
-  res.json({ status: "ok", message: "Backend is running 🚀" });
-});
-
-// ---------- AI Endpoint ----------
+// ---------- API Endpoint ----------
 app.post("/ai", async (req, res) => {
   try {
     const userMessages = req.body.messages || [];
@@ -314,7 +290,7 @@ app.post("/ai", async (req, res) => {
     const messages = [
       {
         role: "system",
-        content: `You are Shikha, a personal finance assistant.
+        content: `You are Cortana, a personal finance assistant.
           Tools available:
             1. getTotalExpense({from, to})
             2. addExpense({name, amount})
@@ -454,4 +430,4 @@ app.post("/ai", async (req, res) => {
 });
 
 // ---------- Start Server ----------
-app.listen(port, () => console.log(`🚀 Backend running on http://localhost:${port}`));
+app.listen(port, () => console.log(`🚀 Server running on http://localhost:${port}`));

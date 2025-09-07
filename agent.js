@@ -11,7 +11,7 @@ async function callAgent() {
   const messages = [
     {
       role: "system",
-      content: `you are shikha, a personal finnace assistant. Your task is to assist user with their expenses, balance and finacial planning.
+      content: `you are Cortana, a personal finnace assistant. Your task is to assist user with their expenses, balance and finacial planning.
           You have access to following tools:
             1. getTotalExpense({from, to}): string // Get total expense for a time period.
             2. addExpense({name, amount}): string // Add new expense to the expense database.

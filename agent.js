@@ -22,7 +22,6 @@ async function callAgent() {
   ];
 
   
-
   // This is for user prompt loop
   while(true) {
     // User

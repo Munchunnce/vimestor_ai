@@ -141,7 +141,6 @@ async function callAgent() {
         tool_call_id: tool.id,
       });
 
-
     //   console.log(JSON.stringify(completion2.choices[0], null, 2));
     }
 
